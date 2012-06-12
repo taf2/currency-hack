@@ -1,0 +1,17 @@
+{
+  "name": "currency-converter",
+  "description": "Currency converter",
+  "version": "0.1.0",
+  "main": "app.js",
+  "author": {
+    "name": "Todd Fisher",
+    "email": "todd.fisher@livingsocial.com"
+  },
+  "engines": {
+    "node": "0.6.18"
+  },
+  "dependencies": {
+    "htmlparser": ">= 1.7.6",
+    "soupselect": "0.2.0"
+  }
+}
