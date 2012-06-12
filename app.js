@@ -17,6 +17,16 @@ var Server      = null;
 var connections = [];
 var IndexPage   = require('fs').readFileSync(__dirname + "/index.html");
 
+function sendEncodedResponse(timer, http_response, result) {
+  var response = JSON.stringify(result);
+  http_response.writeHead(200, {"Content-Type": "text/json",
+                                "Content-Length": response.length,
+                                "Access-Control-Allow-Origin": "*"});
+  http_response.write(response);
+  http_response.end();
+  if (timer) { clearTimeout(timer); }
+}
+
 function requestHandler(req,http_response) {
   var uri = URL.parse(req.url, true);
 
@@ -31,16 +41,14 @@ function requestHandler(req,http_response) {
       'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_7_4) AppleWebKit/536.11 (KHTML, like Gecko) Chrome/20.0.1132.27 Safari/536.11'
     }};
     var result = {};
+    var timer = null;
 
     HTTP.get(options, function(res) {
       if (res.statusCode >= 200 && res.statusCode < 300) {
         console.log("got %d", res.statusCode);
         var handler = new HTMLParser.DefaultHandler(function (error, dom) {
           result.amount = Select(dom, "#currency_converter_result .bld")[0].children[0].data;
-          var response = JSON.stringify(result);
-          http_response.writeHead(200, {"Content-Type": "text/json", "Content-Length": response.length});
-          http_response.write(response);
-          http_response.end();
+          sendEncodedResponse(timer, http_response, result);
         });
         var parser = new HTMLParser.Parser(handler);
         res.on('data', function (chunk) {
@@ -51,18 +59,16 @@ function requestHandler(req,http_response) {
         });
       } else {
         result.error = "unexpected result";
-        var response = JSON.stringify(result);
-        http_response.writeHead(200, {"Content-Type": "text/json", "Content-Length": response.length});
-        http_response.write(response);
-        http_response.end();
+        sendEncodedResponse(timer, http_response, result);
       }
     }).on("error", function(err) {
       result.error = err.message;
-      var response = JSON.stringify(result);
-      http_response.writeHead(200, {"Content-Type": "text/json", "Content-Length": response.length});
-      http_response.write(response);
-      http_response.end();
+      sendEncodedResponse(timer, http_response, result);
     });
+    timer = setTimeout(function() {
+      result.error = "timeout error";
+      sendEncodedResponse(timer, http_response, result);
+    },8000);
 
   } else {
     http_response.writeHead(200, {"Content-Type": "text/html", "Content-Length": IndexPage.length});
